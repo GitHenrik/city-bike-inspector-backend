@@ -3,6 +3,7 @@ import React from "react";
 import JourneyList from "./components/journeyList";
 import StationList from "./components/stationList";
 import journeyApi from "./api/journeyApi";
+import stationApi from "./api/stationApi";
 
 export interface Station {
   fid: number;
@@ -49,14 +50,14 @@ const App = () => {
   const [isLoadingStations, setIsLoadingStations] = React.useState(false);
   const [isLoadingJourneys, setIsLoadingJourneys] = React.useState(false);
 
-  // get all station names on load
-  // React.useEffect(() => {
-  //   setIsLoadingStations(true)
-  //   api.getStationNames()
-  //     .then(names => setStationNames(names))
-  //     .catch((_) => setHasStationHerror(true))
-  //     .finally(() => setIsLoadingStations(false))
-  // }, [])
+  //get all station names on load
+  React.useEffect(() => {
+    setIsLoadingStations(true)
+    stationApi.getStationNames()
+      .then(names => setStationNames(names))
+      .catch((_) => setHasStationHerror(true))
+      .finally(() => setIsLoadingStations(false))
+  }, [])
 
   // get some journeys on load
   React.useEffect(() => {

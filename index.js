@@ -6,8 +6,8 @@ app.use(cors());
 app.use(express.json());
 require("dotenv").config();
 
-// pipelines
-const journeysByDeparture = require("./mongodb/pipelines");
+// Utils
+const {mapJourneys, mapStations, getStationNames, getStationByName} = require("./utils/mappings");
 
 // Mongo stuff: client
 const { MongoClient, ServerApiVersion } = require("mongodb");
@@ -18,10 +18,12 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+// pipelines
+const journeysByDeparture = require("./mongodb/pipelines");
+
+// Journeys
 const getFilteredJourneys = async () => {
-  // Use connect method to connect to the server
   await client.connect();
-  console.log("Connected successfully to server");
   const journeys = client.db("city-bike-data").collection("journeys");
   const filteredJourneys = await journeys
     .aggregate(journeysByDeparture)
@@ -29,29 +31,38 @@ const getFilteredJourneys = async () => {
   return filteredJourneys;
 };
 
-// Mappings
-const mapJourneys = (journeys) => {
-  return journeys.map((journey) => {
-    return {
-      departureTime: journey["Departure"],
-      returnTime: journey["Return"],
-      departureStationId: journey["Departure station id"],
-      departureStationName: journey["Departure station name"],
-      returnStationId: journey["Return station id"],
-      returnStationName: journey["Return station name"],
-      coveredDistance: journey["Covered distance (m)"],
-      duration: journey["Duration (sec)"],
-      id: journey._id,
-    };
-  });
-};
-
-// Express stuff
 app.get("/journeys", (req, res) => {
   getFilteredJourneys()
-    .then((journeys) => res.send(mapJourneys(journeys)).json())
+    .then((journeys) => res.send(mapJourneys(journeys)))
     .catch(console.error)
-    .finally(() => client.close());
+    // Connection is not closed
+    // .finally(() => client.close());
+});
+
+// Stations
+const getStations = async () => {
+  await client.connect();
+  const stations = client.db("city-bike-data").collection("stations");
+  // chaining aggregate.array is required
+  return stations.aggregate().toArray();
+}
+
+app.get("/stations", (req, res) => {
+  getStations()
+    .then(stations => res.send(mapStations(stations)))
+    .catch(console.error)
+});
+
+app.get("/stations/names", (req, res) => {
+  getStations()
+    .then(stations => res.send(getStationNames(stations)))
+    .catch(console.error)
+});
+
+app.get("/stations/names/:name", (req, res) => {
+  getStations()
+    .then(stations => res.send(getStationByName(stations, req.params.name)))
+    .catch(console.error)
 });
 
 app.listen(3001);
