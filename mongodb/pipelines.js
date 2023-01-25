@@ -9,7 +9,7 @@ const journeysByDeparture = [
       }
     }
   }, {
-    '$limit': 100
+    '$limit': 10
   }, {
     '$sort': {
       'Departure': 1
