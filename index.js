@@ -11,7 +11,7 @@ const {mapJourneys, mapStations, getStationNames, getStationByName} = require(".
 
 // Mongo stuff: client
 const { MongoClient, ServerApiVersion } = require("mongodb");
-const uri = `mongodb+srv://${process.env.ATLAS_USER}:${process.env.ATLAS_PW}@cluster0.gy8uuph.mongodb.net/city-bike-data?retryWrites=true&w=majority`;
+const uri = `mongodb+srv://${process.env.ATLAS_USER}:${process.env.ATLAS_PW}@${process.env.ATLAS_URL}`;
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
