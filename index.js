@@ -7,7 +7,12 @@ app.use(express.json());
 require("dotenv").config();
 
 // Utils
-const {mapJourneys, mapStations, getStationNames, getStationByName} = require("./utils/mappings");
+const {
+  mapJourneys,
+  mapStations,
+  getStationNames,
+  getStationByName,
+} = require("./utils/mappings");
 
 // Mongo stuff: client
 const { MongoClient, ServerApiVersion } = require("mongodb");
@@ -18,13 +23,15 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
+// single database connection
+let db;
+
 // pipelines
 const journeysByDeparture = require("./mongodb/pipelines");
 
 // Journeys
 const getFilteredJourneys = async () => {
-  await client.connect();
-  const journeys = client.db("city-bike-data").collection("journeys");
+  const journeys = db.collection("journeys");
   const filteredJourneys = await journeys
     .aggregate(journeysByDeparture)
     .toArray();
@@ -34,35 +41,45 @@ const getFilteredJourneys = async () => {
 app.get("/journeys", (req, res) => {
   getFilteredJourneys()
     .then((journeys) => res.send(mapJourneys(journeys)))
-    .catch(console.error)
-    // Connection is not closed
-    // .finally(() => client.close());
+    .catch(console.error);
 });
 
 // Stations
 const getStations = async () => {
-  await client.connect();
-  const stations = client.db("city-bike-data").collection("stations");
+  const stations = db.collection("stations");
   // chaining aggregate.array is required
-  return stations.aggregate().toArray();
-}
+  return await stations.aggregate().toArray();
+};
 
 app.get("/stations", (req, res) => {
   getStations()
-    .then(stations => res.send(mapStations(stations)))
-    .catch(console.error)
+    .then((stations) => res.send(mapStations(stations)))
+    .catch(console.error);
 });
 
 app.get("/stations/names", (req, res) => {
   getStations()
-    .then(stations => res.send(getStationNames(stations)))
-    .catch(console.error)
+    .then((stations) => res.send(getStationNames(stations)))
+    .catch(console.error);
 });
 
 app.get("/stations/names/:name", (req, res) => {
   getStations()
-    .then(stations => res.send(getStationByName(stations, req.params.name)))
-    .catch(console.error)
+    .then((stations) => res.send(getStationByName(stations, req.params.name)))
+    .catch(console.error);
 });
 
-app.listen(3001);
+// server initialization function
+const init = async () => {
+  try {
+    // connect once (in single-thread nodejs, connection is kept open)
+    await client.connect();
+    db = client.db("city-bike-data");
+    app.listen(3001, () => console.log("MongoDB connection initialized!"));
+  } catch (e) {
+    console.log("error: ", e);
+  }
+};
+
+// start the server
+init();
